@@ -49,12 +49,17 @@ CREATE TRIGGER update_testimonials_updated_at
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "testimonials_select_public" ON testimonials;
+DROP POLICY IF EXISTS "testimonials_select_active" ON testimonials;
+DROP POLICY IF EXISTS "testimonials_select_admin"  ON testimonials;
 DROP POLICY IF EXISTS "testimonials_insert_admin"  ON testimonials;
 DROP POLICY IF EXISTS "testimonials_update_admin"  ON testimonials;
 DROP POLICY IF EXISTS "testimonials_delete_admin"  ON testimonials;
 
-CREATE POLICY "testimonials_select_public" ON testimonials
-  FOR SELECT USING (true);
+-- Public : uniquement les témoignages actifs
+CREATE POLICY "testimonials_select_active" ON testimonials
+  FOR SELECT USING (is_active = true OR is_admin());
+
+-- Admin : tous les témoignages (actifs + masqués)
 
 CREATE POLICY "testimonials_insert_admin" ON testimonials
   FOR INSERT WITH CHECK (is_admin());

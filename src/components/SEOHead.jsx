@@ -108,7 +108,7 @@ const SEOHead = ({
         <script
           key={`schema-${index}`}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/<\/script>/gi, '<\\/script>') }}
         />
       ))}
     </Helmet>
