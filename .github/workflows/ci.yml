@@ -2,7 +2,7 @@ name: CI — Lint & Build
 
 on:
   push:
-    branches: [prod, develop]
+    branches: [prod, develop, 'feature/**', 'fix/**', 'chore/**']
   pull_request:
     branches: [prod, develop]
 
