@@ -7,7 +7,7 @@
 --
 -- Contexte :
 --   - Boutique e-commerce marché sénégalais
---   - Auth admin via supabase.auth + user_metadata.role = 'admin'
+--   - Auth admin via supabase.auth + app_metadata.role = 'admin'
 --   - Checkout invité (anon) → insertion orders/order_items sans auth
 --   - Coupons validés côté client → SELECT public requis
 -- ============================================================
@@ -15,7 +15,8 @@
 -- ============================================================
 -- HELPER : fonction is_admin()
 -- Centralise la vérification du rôle pour toutes les politiques.
--- Lecture depuis user_metadata (JWT claim standard Supabase Auth).
+-- Lecture depuis app_metadata (non modifiable par l'utilisateur côté client,
+-- contrairement à user_metadata qui peut être écrit via supabase.auth.updateUser()).
 -- ============================================================
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN
@@ -25,11 +26,11 @@ SECURITY DEFINER
 AS $$
   SELECT
     auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin';
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
 $$;
 
 COMMENT ON FUNCTION is_admin() IS
-  'Retourne true si l''utilisateur connecté possède le rôle admin dans user_metadata.';
+  'Retourne true si l''utilisateur connecté possède le rôle admin dans app_metadata (immuable côté client).';
 
 -- ============================================================
 -- 1. ACTIVATION DU ROW LEVEL SECURITY
@@ -543,7 +544,7 @@ CREATE POLICY "storage_products_insert_admin"
   ON storage.objects FOR INSERT
   WITH CHECK (
     bucket_id = 'products'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- Politique suppression admin uniquement
@@ -552,7 +553,7 @@ CREATE POLICY "storage_products_delete_admin"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'products'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- ============================================================

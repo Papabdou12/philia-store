@@ -20,7 +20,7 @@ SECURITY DEFINER
 AS $$
   SELECT
     auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin';
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
 $$;
 
 CREATE TABLE IF NOT EXISTS testimonials (

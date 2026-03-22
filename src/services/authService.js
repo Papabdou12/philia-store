@@ -22,7 +22,7 @@ export const signIn = async (email, password) => {
     }
 
     // Vérifier le rôle admin
-    const role = data.user?.user_metadata?.role;
+    const role = data.user?.app_metadata?.role;
     if (role !== 'admin') {
       await supabase.auth.signOut();
       return { user: null, error: 'Accès non autorisé. Compte admin requis.' };
@@ -67,7 +67,7 @@ export const getCurrentUser = async () => {
  */
 export const isAdmin = async () => {
   const user = await getCurrentUser();
-  return user?.user_metadata?.role === 'admin';
+  return user?.app_metadata?.role === 'admin';
 };
 
 /**

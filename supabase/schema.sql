@@ -251,7 +251,7 @@ CREATE POLICY "Categories: lecture publique" ON categories
 CREATE POLICY "Categories: écriture admin" ON categories
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- PRODUCTS: Lecture publique, écriture admin
@@ -263,7 +263,7 @@ CREATE POLICY "Products: lecture publique" ON products
 CREATE POLICY "Products: écriture admin" ON products
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- PRODUCT_IMAGES: Lecture publique, écriture admin
@@ -275,7 +275,7 @@ CREATE POLICY "Product Images: lecture publique" ON product_images
 CREATE POLICY "Product Images: écriture admin" ON product_images
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- PRODUCT_VARIANTS: Lecture publique, écriture admin
@@ -287,7 +287,7 @@ CREATE POLICY "Product Variants: lecture publique" ON product_variants
 CREATE POLICY "Product Variants: écriture admin" ON product_variants
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- COUPONS: Lecture publique (pour validation), écriture admin
@@ -299,7 +299,7 @@ CREATE POLICY "Coupons: lecture publique" ON coupons
 CREATE POLICY "Coupons: écriture admin" ON coupons
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- ORDERS: Insertion publique (checkout), lecture/modification admin
@@ -312,13 +312,13 @@ CREATE POLICY "Orders: insertion publique" ON orders
 CREATE POLICY "Orders: lecture admin" ON orders
   FOR SELECT USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 CREATE POLICY "Orders: modification admin" ON orders
   FOR UPDATE USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- ORDER_ITEMS: Insertion publique, lecture admin
@@ -330,7 +330,7 @@ CREATE POLICY "Order Items: insertion publique" ON order_items
 CREATE POLICY "Order Items: lecture admin" ON order_items
   FOR SELECT USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- ============================================
@@ -519,7 +519,7 @@ DROP POLICY IF EXISTS "Stock history: admin only" ON stock_history;
 CREATE POLICY "Stock history: admin only" ON stock_history
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- Price history: admin seulement
@@ -527,7 +527,7 @@ DROP POLICY IF EXISTS "Price history: admin only" ON price_history;
 CREATE POLICY "Price history: admin only" ON price_history
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- Stock alerts: admin seulement
@@ -535,7 +535,7 @@ DROP POLICY IF EXISTS "Stock alerts: admin only" ON stock_alerts;
 CREATE POLICY "Stock alerts: admin only" ON stock_alerts
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- Variant stock: lecture publique, écriture admin
@@ -547,7 +547,7 @@ CREATE POLICY "Variant stock: lecture publique" ON variant_stock
 CREATE POLICY "Variant stock: écriture admin" ON variant_stock
   FOR ALL USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- Payments: insertion publique (checkout), lecture admin
@@ -559,7 +559,7 @@ CREATE POLICY "Payments: insertion publique" ON payments
 CREATE POLICY "Payments: lecture admin" ON payments
   FOR SELECT USING (
     auth.role() = 'authenticated' AND
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
 -- ============================================

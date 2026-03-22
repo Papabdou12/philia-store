@@ -5,33 +5,70 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
  */
 
 /**
- * Génère un numéro de commande unique
- */
-const generateOrderNumber = () => {
-  const date = new Date();
-  const dateStr = date.toISOString().slice(2, 10).replace(/-/g, '');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `PH${dateStr}-${random}`;
-};
-
-/**
- * Crée une nouvelle commande (Checkout)
+ * Crée une nouvelle commande via l'Edge Function Supabase.
+ *
+ * L'Edge Function effectue côté serveur :
+ *   - Rate limiting (max 5 commandes / téléphone / 24h)
+ *   - Recalcul des prix depuis la base (empêche la manipulation client)
+ *   - Validation du coupon
+ *   - Récupération du coût de livraison depuis delivery_zones
+ *
+ * Fallback : insertion directe si l'Edge Function n'est pas déployée.
  */
 export const createOrder = async (orderData) => {
-  const {
-    customer,
-    items,
-    delivery,
-    payment,
-    coupon,
-    subtotal,
-    discountAmount,
-    total,
-  } = orderData;
+  const { customer, items, delivery, payment, coupon } = orderData;
 
-  const orderNumber = generateOrderNumber();
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  // Créer la commande
+  // ── Appel Edge Function (prioritaire) ──────────────────────────────────
+  if (supabaseUrl && supabaseKey) {
+    const payload = {
+      customer,
+      items: items.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        selectedColor: item.variant?.color ?? null,
+        selectedSize: item.variant?.size ?? null,
+      })),
+      deliveryZone: delivery.zone,
+      paymentMethod: payment.method,
+      couponCode: coupon?.code ?? null,
+    };
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (res.status === 429) {
+      throw new Error(data.error || 'Trop de commandes. Réessayez dans 24h.');
+    }
+    if (!res.ok) {
+      throw new Error(data.error || 'Erreur lors de la création de la commande');
+    }
+
+    return { order_number: data.order_number, ...data };
+  }
+
+  // ── Fallback : insertion directe (Edge Function non déployée) ──────────
+  // ⚠️ Ce chemin n'effectue pas de recalcul serveur ni de rate limiting.
+  // Déployer l'Edge Function avant la mise en production.
+  const { subtotal, discountAmount, total } = orderData;
+  const orderNumber = (() => {
+    const d = new Date();
+    const ds = d.toISOString().slice(2, 10).replace(/-/g, '');
+    const r = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `PH${ds}-${r}`;
+  })();
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -56,7 +93,6 @@ export const createOrder = async (orderData) => {
 
   if (orderError) throw orderError;
 
-  // Créer les articles de la commande
   const orderItems = items.map(item => ({
     order_id: order.id,
     product_id: item.id,
@@ -68,21 +104,14 @@ export const createOrder = async (orderData) => {
     selected_size: item.variant?.size || null,
   }));
 
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
+  const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
   if (itemsError) throw itemsError;
 
-  // Incrémenter l'utilisation du coupon si applicable
   if (coupon?.code) {
     await supabase.rpc('increment_coupon_uses', { coupon_code: coupon.code });
   }
 
-  return {
-    orderNumber,
-    ...order,
-  };
+  return { order_number: orderNumber, ...order };
 };
 
 /**

@@ -15,7 +15,7 @@ export const AdminAuthProvider = ({ children }) => {
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
-          const adminStatus = currentUser.user_metadata?.role === 'admin';
+          const adminStatus = currentUser.app_metadata?.role === 'admin';
           setUser(currentUser);
           setIsAdmin(adminStatus);
         }
@@ -31,7 +31,7 @@ export const AdminAuthProvider = ({ children }) => {
     // Écouter les changements d'auth
     const { data: { subscription } } = onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        const adminStatus = session.user.user_metadata?.role === 'admin';
+        const adminStatus = session.user.app_metadata?.role === 'admin';
         setUser(session.user);
         setIsAdmin(adminStatus);
       } else if (event === 'SIGNED_OUT') {
