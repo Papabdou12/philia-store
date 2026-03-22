@@ -11,7 +11,7 @@ import {
   Grid3X3,
   MessageSquare,
 } from 'lucide-react';
-import { signOut } from '@/services/authService';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 const navItems = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
@@ -25,15 +25,11 @@ const navItems = [
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { logout } = useAdminAuth();
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (e) {
-      console.error('Logout error:', e);
-    } finally {
-      navigate('/admin/login');
-    }
+    await logout();
+    navigate('/admin/login');
   };
 
   return (
@@ -49,7 +45,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 z-50
+          fixed top-0 left-0 h-full w-64 z-50 flex flex-col
           bg-white dark:bg-[#0A0A0A]
           border-r border-gray-200 dark:border-bronze/20
           transform transition-transform duration-300 ease-in-out
@@ -58,11 +54,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-bronze/20">
-          <div>
-            <h1 className="text-xl font-serif text-gold tracking-widest">PHILIA</h1>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-bronze/20 shrink-0">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="group">
+            <h1 className="text-xl font-serif text-gold tracking-widest group-hover:opacity-80 transition-opacity">PHILIA</h1>
             <p className="text-gray-400 dark:text-white/40 text-xs mt-1">Admin Panel</p>
-          </div>
+          </a>
           <button
             onClick={onClose}
             className="lg:hidden text-gray-400 dark:text-white/60 hover:text-gray-900 dark:hover:text-white cursor-pointer"
@@ -71,8 +67,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="p-4 space-y-1">
+        {/* Navigation — scrollable */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -91,10 +87,11 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="text-sm font-medium">{item.label}</span>
             </NavLink>
           ))}
+
         </nav>
 
         {/* Footer — Déconnexion */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-bronze/20">
+        <div className="shrink-0 p-4 border-t border-gray-200 dark:border-bronze/20">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all cursor-pointer"

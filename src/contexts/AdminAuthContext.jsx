@@ -45,11 +45,23 @@ export const AdminAuthProvider = ({ children }) => {
     };
   }, []);
 
+  const logout = async () => {
+    // Vider l'état local immédiatement — ne pas attendre Supabase
+    setUser(null);
+    setIsAdmin(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Supabase signOut error (session cleared locally):', e);
+    }
+  };
+
   const value = {
     user,
     isAdmin,
     loading,
     isAuthenticated: !!user && isAdmin,
+    logout,
   };
 
   return (
