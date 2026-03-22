@@ -10,10 +10,16 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// En production : définir ALLOWED_ORIGIN dans Supabase Edge Function secrets
+//   npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
+// En dev : '*' est utilisé par défaut
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
+
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*', // Restreindre à votre domaine en production
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
 };
 
 const json = (data: unknown, status = 200) =>
