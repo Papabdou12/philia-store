@@ -2,6 +2,7 @@
 const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://philiastore.sn';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 const SITE_NAME = "Philia'Store";
+const STORE_PHONE = import.meta.env.VITE_STORE_PHONE || '';
 
 export const getPageMeta = (page, data = {}) => {
   const baseTitle = "Philia'Store";
@@ -73,7 +74,7 @@ export const getPageMeta = (page, data = {}) => {
       description: "Contactez Philia'Store par téléphone, WhatsApp ou email. Notre équipe est à votre écoute.",
       canonical: `${BASE_URL}/contact`,
       ogTitle: `Contactez Philia'Store`,
-      ogDescription: "Joignez notre équipe par WhatsApp (+221 78 396 89 70), email ou formulaire. Disponibles 7j/7 pour vous accompagner.",
+      ogDescription: `Joignez notre équipe par WhatsApp${STORE_PHONE ? ` (${STORE_PHONE})` : ''}, email ou formulaire. Disponibles 7j/7 pour vous accompagner.`,
       ogImage: DEFAULT_OG_IMAGE,
       ogType: 'website',
       twitterCard: 'summary_large_image',

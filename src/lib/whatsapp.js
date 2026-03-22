@@ -4,7 +4,7 @@
  */
 
 // Numéro WhatsApp de la boutique (format international sans +) — via .env
-export const WHATSAPP_NUMBER = import.meta.env.VITE_STORE_WHATSAPP || '';
+export const WHATSAPP_NUMBER = import.meta.env.VITE_STORE_WHATSAPP || '221783968970';
 
 /**
  * Génère un message de commande formaté pour WhatsApp

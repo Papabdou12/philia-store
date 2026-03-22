@@ -6,7 +6,7 @@ export const BRAND_COLORS = {
   white: '#FFFFFF',
 };
 
-const _wa = import.meta.env.VITE_STORE_WHATSAPP || '';
+const _wa = import.meta.env.VITE_STORE_WHATSAPP || '221783968970';
 
 export const CONTACT_INFO = {
   phone: import.meta.env.VITE_STORE_PHONE || '',

@@ -22,7 +22,7 @@ const SLIDES = [
     subtitle: 'Des wax, bazin et tissus brodés pour sublimer votre style traditionnel et moderne.',
     cta: 'Découvrir les tissus',
     ctaLink: '/boutique?category=mode',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&q=80&w=1800',
+    image: '/images/hero/hero-1.jpg',
     accent: '#D4AF37',
   },
   {
@@ -32,7 +32,7 @@ const SLIDES = [
     subtitle: 'Sacs, bijoux et maroquinerie — une sélection curatée pour chaque occasion.',
     cta: 'Voir la collection',
     ctaLink: '/boutique?category=mode',
-    image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1800',
+    image: '/images/hero/hero-2.jpg',
     accent: '#C9A84C',
   },
   {
@@ -42,7 +42,7 @@ const SLIDES = [
     subtitle: 'Produits de beauté et soins sélectionnés pour la femme africaine moderne.',
     cta: 'Explorer la beauté',
     ctaLink: '/boutique?category=beaute',
-    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=1800',
+    image: '/images/hero/hero-3.jpg',
     accent: '#E8C77A',
   },
   {
@@ -52,7 +52,7 @@ const SLIDES = [
     subtitle: '24h à Dakar • 48-72h partout au Sénégal. Paiement Wave, Orange Money ou cash.',
     cta: 'Commander maintenant',
     ctaLink: '/boutique',
-    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1800',
+    image: '/images/hero/hero-4.jpg',
     accent: '#D4AF37',
   },
 ];
