@@ -1,5 +1,5 @@
 
-const BASE_URL = 'https://philiastore.sn';
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://philiastore.sn';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 const SITE_NAME = "Philia'Store";
 

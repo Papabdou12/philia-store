@@ -6,14 +6,17 @@ export const BRAND_COLORS = {
   white: '#FFFFFF',
 };
 
+const _wa = import.meta.env.VITE_STORE_WHATSAPP || '';
+
 export const CONTACT_INFO = {
-  phone: '+221 78 396 89 70',
-  whatsapp: 'https://wa.me/221783968970',
-  email: 'contact@philiastore.sn',
-  address: 'Dakar, Sénégal',
-  facebook: 'https://facebook.com/philiastore',
-  instagram: 'https://instagram.com/philiastore',
-  twitter: 'https://twitter.com/philiastore',
+  phone: import.meta.env.VITE_STORE_PHONE || '',
+  whatsapp: _wa ? `https://wa.me/${_wa}` : '',
+  email: import.meta.env.VITE_STORE_EMAIL || '',
+  address: import.meta.env.VITE_STORE_ADDRESS || 'Dakar, Sénégal',
+  facebook: import.meta.env.VITE_STORE_FACEBOOK || '',
+  instagram: import.meta.env.VITE_STORE_INSTAGRAM || '',
+  twitter: import.meta.env.VITE_STORE_TWITTER || '',
+  tiktok: import.meta.env.VITE_STORE_TIKTOK || '',
 };
 
 export const SENEGAL_REGIONS = [

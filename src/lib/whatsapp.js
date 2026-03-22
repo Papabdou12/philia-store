@@ -3,8 +3,8 @@
  * Génère des liens WhatsApp avec messages pré-remplis
  */
 
-// Numéro WhatsApp de la boutique (format international sans +)
-export const WHATSAPP_NUMBER = '221783968970';
+// Numéro WhatsApp de la boutique (format international sans +) — via .env
+export const WHATSAPP_NUMBER = import.meta.env.VITE_STORE_WHATSAPP || '';
 
 /**
  * Génère un message de commande formaté pour WhatsApp

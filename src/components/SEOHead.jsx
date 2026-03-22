@@ -1,25 +1,29 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 
-const BASE_URL = 'https://philiastore.sn';
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://philiastore.sn';
+const STORE_PHONE = import.meta.env.VITE_STORE_PHONE || '';
+const STORE_INSTAGRAM = import.meta.env.VITE_STORE_INSTAGRAM || '';
+const STORE_TIKTOK = import.meta.env.VITE_STORE_TIKTOK || '';
+
+const sameAs = [STORE_INSTAGRAM, STORE_TIKTOK].filter(Boolean);
 
 const ORGANIZATION_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: "Philia'Store",
+  name: import.meta.env.VITE_SITE_NAME || "Philia'Store",
   url: BASE_URL,
   logo: `${BASE_URL}/logo.png`,
-  contactPoint: {
-    '@type': 'ContactPoint',
-    telephone: '+221-78-396-89-70',
-    contactType: 'customer service',
-    areaServed: 'SN',
-    availableLanguage: 'French',
-  },
-  sameAs: [
-    'https://www.instagram.com/philia.store',
-    'https://www.tiktok.com/@philia.store',
-  ],
+  ...(STORE_PHONE && {
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: STORE_PHONE,
+      contactType: 'customer service',
+      areaServed: 'SN',
+      availableLanguage: 'French',
+    },
+  }),
+  ...(sameAs.length > 0 && { sameAs }),
 };
 
 const WEBSITE_SCHEMA = {
