@@ -1,0 +1,174 @@
+name: Production — Deploy
+
+on:
+  push:
+    branches: [prod]
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false  # jamais annuler un deploy prod en cours
+
+jobs:
+  # ── Gate : CI + Security doivent passer avant ─────────────────────────────
+  pre-checks:
+    name: Vérifications pré-production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security audit (bloquant en prod)
+        run: npm audit --audit-level=high
+
+      - name: Vérification .env non commité
+        run: |
+          if git ls-files | grep -E '^\.env(\.local|\.production|\.staging)?$'; then
+            echo "❌ Fichier .env détecté dans le repo — deploy annulé"
+            exit 1
+          fi
+
+  # ── Build production ───────────────────────────────────────────────────────
+  build:
+    name: Build Production
+    runs-on: ubuntu-latest
+    needs: pre-checks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Build production
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_PROD }}
+          VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY_PROD }}
+          VITE_BASE_URL: ${{ secrets.VITE_BASE_URL_PROD }}
+          VITE_SITE_NAME: "Philia'Store"
+          VITE_STORE_PHONE: ${{ secrets.VITE_STORE_PHONE }}
+          VITE_STORE_WHATSAPP: ${{ secrets.VITE_STORE_WHATSAPP }}
+          VITE_STORE_EMAIL: ${{ secrets.VITE_STORE_EMAIL }}
+          VITE_STORE_ADDRESS: ${{ secrets.VITE_STORE_ADDRESS }}
+          VITE_STORE_FACEBOOK: ${{ secrets.VITE_STORE_FACEBOOK }}
+          VITE_STORE_INSTAGRAM: ${{ secrets.VITE_STORE_INSTAGRAM }}
+          VITE_STORE_TWITTER: ${{ secrets.VITE_STORE_TWITTER }}
+          VITE_STORE_TIKTOK: ${{ secrets.VITE_STORE_TIKTOK }}
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-prod-${{ github.sha }}
+          path: dist/
+          retention-days: 7
+
+  # ── Gate manuel ────────────────────────────────────────────────────────────
+  approval:
+    name: Approbation manuelle requise
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production  # Configurer dans GitHub > Settings > Environments > Required reviewers
+
+    steps:
+      - name: Déploiement approuvé
+        run: echo "✅ Déploiement production approuvé par ${{ github.actor }}"
+
+  # ── Deploy Vercel production ───────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Vercel (Production)
+    runs-on: ubuntu-latest
+    needs: approval
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-prod-${{ github.sha }}
+          path: dist/
+
+      - name: Deploy sur Vercel (production)
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          URL=$(npx vercel deploy dist/ \
+            --token=$VERCEL_TOKEN \
+            --scope=$VERCEL_ORG_ID \
+            --prod \
+            --yes \
+            2>&1 | grep -o 'https://[^ ]*' | head -1)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "✅ Production déployée : $URL"
+
+  # ── Deploy Supabase Edge Function ──────────────────────────────────────────
+  deploy-edge-function:
+    name: Deploy Edge Function (Supabase)
+    runs-on: ubuntu-latest
+    needs: approval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy create-order Edge Function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy create-order \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+
+      - name: Configurer ALLOWED_ORIGIN en production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets set \
+            ALLOWED_ORIGIN=${{ secrets.VITE_BASE_URL_PROD }} \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+
+  # ── Notification de succès ─────────────────────────────────────────────────
+  notify:
+    name: Notification déploiement
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-edge-function]
+    if: always()
+
+    steps:
+      - name: Résumé du déploiement
+        run: |
+          if [[ "${{ needs.deploy-frontend.result }}" == "success" && "${{ needs.deploy-edge-function.result }}" == "success" ]]; then
+            echo "🚀 Déploiement production réussi !"
+            echo "Frontend : ${{ needs.deploy-frontend.outputs.url }}"
+            echo "Edge Function : create-order deployée"
+          else
+            echo "❌ Déploiement partiellement échoué"
+            echo "Frontend : ${{ needs.deploy-frontend.result }}"
+            echo "Edge Function : ${{ needs.deploy-edge-function.result }}"
+            exit 1
+          fi

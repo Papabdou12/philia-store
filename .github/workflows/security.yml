@@ -1,0 +1,113 @@
+name: Security — Audit & Scan
+
+on:
+  push:
+    branches: [prod, develop]
+  pull_request:
+    branches: [prod, develop]
+  schedule:
+    # Scan complet chaque lundi à 07h00 UTC (audit des nouvelles CVE)
+    - cron: '0 7 * * 1'
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Détection de secrets ────────────────────────────────────────────────
+  secret-scan:
+    name: Gitleaks — Détection de secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # historique complet pour scanner tous les commits
+
+      - name: Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── 2. Audit des dépendances npm ──────────────────────────────────────────
+  npm-audit:
+    name: NPM Audit — Dépendances
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit (high + critical uniquement)
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Rapport complet (non bloquant)
+        run: npm audit --json > npm-audit-report.json || true
+
+      - name: Upload rapport
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-${{ github.sha }}
+          path: npm-audit-report.json
+          retention-days: 30
+
+  # ── 3. SAST — Analyse statique du code ────────────────────────────────────
+  sast:
+    name: Semgrep — SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan (OWASP + React + secrets)
+        run: |
+          semgrep scan \
+            --config "p/owasp-top-ten" \
+            --config "p/react" \
+            --config "p/secrets" \
+            --config "p/javascript" \
+            --error \
+            --json \
+            --output semgrep-report.json \
+            src/
+        continue-on-error: true  # ne bloque pas mais remonte les findings
+
+      - name: Upload rapport Semgrep
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-${{ github.sha }}
+          path: semgrep-report.json
+          retention-days: 30
+
+  # ── 4. Vérification .env non commité ──────────────────────────────────────
+  env-check:
+    name: Vérification fichiers sensibles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Aucun .env.local ou .env ne doit être commité
+        run: |
+          if git ls-files | grep -E '^\.env(\.local|\.production|\.staging)?$'; then
+            echo "❌ ERREUR : fichier .env sensible détecté dans le repo !"
+            exit 1
+          fi
+          echo "✅ Aucun fichier .env sensible trouvé"
+
+      - name: Vérifier l'absence de credentials hardcodés
+        run: |
+          # Cherche des patterns de credentials évidents
+          if grep -rE "(password|secret|api_key|apikey)\s*=\s*['\"][^'\"]{8,}" src/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" -i; then
+            echo "⚠️  Credentials potentiels détectés — vérifiez manuellement"
+          else
+            echo "✅ Aucun credential hardcodé détecté"
+          fi
