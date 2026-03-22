@@ -1,7 +1,8 @@
 import React from 'react';
-import { Menu, Bell, User, Sun, Moon, ExternalLink } from 'lucide-react';
+import { Menu, User, Sun, Moon, ExternalLink } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import NotificationDropdown from '@/components/admin/NotificationDropdown';
 
 const Header = ({ title, onMenuClick }) => {
   const { user } = useAdminAuth();
@@ -44,10 +45,7 @@ const Header = ({ title, onMenuClick }) => {
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-lg text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold rounded-full" />
-          </button>
+          <NotificationDropdown />
 
           {/* User */}
           <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-bronze/20">

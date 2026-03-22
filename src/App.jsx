@@ -1,5 +1,7 @@
 import React from 'react';
 import { Route, Routes, BrowserRouter as Router, useLocation } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { AppProvider } from '@/contexts/AppContext';
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -113,17 +115,19 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AppProvider>
-      <AdminAuthProvider>
-        <ThemeProvider>
-          <Router>
-            <ScrollToTop />
-            <AppContent />
-            <Toaster />
-          </Router>
-        </ThemeProvider>
-      </AdminAuthProvider>
-    </AppProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppProvider>
+        <AdminAuthProvider>
+          <ThemeProvider>
+            <Router>
+              <ScrollToTop />
+              <AppContent />
+              <Toaster />
+            </Router>
+          </ThemeProvider>
+        </AdminAuthProvider>
+      </AppProvider>
+    </QueryClientProvider>
   );
 }
 

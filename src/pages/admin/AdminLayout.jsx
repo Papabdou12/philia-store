@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '@/components/admin/Sidebar';
 import Header from '@/components/admin/Header';
 import { useTheme } from '@/contexts/ThemeContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 // Map des titres par route
 const routeTitles = {
@@ -31,19 +32,21 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className={isDark ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-50 dark:bg-black flex">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <NotificationProvider>
+      <div className={isDark ? 'dark' : ''}>
+        <div className="min-h-screen bg-gray-50 dark:bg-black flex">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="flex-1 flex flex-col min-h-screen lg:ml-0">
-          <Header title={getTitle()} onMenuClick={() => setSidebarOpen(true)} />
+          <div className="flex-1 flex flex-col min-h-screen lg:ml-0">
+            <Header title={getTitle()} onMenuClick={() => setSidebarOpen(true)} />
 
-          <main className="flex-1 p-6">
-            <Outlet />
-          </main>
+            <main className="flex-1 p-6">
+              <Outlet />
+            </main>
+          </div>
         </div>
       </div>
-    </div>
+    </NotificationProvider>
   );
 };
 
