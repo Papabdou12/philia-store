@@ -216,74 +216,36 @@ export const getOrderStats = async () => {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const weekStart = new Date(now.setDate(now.getDate() - 7)).toISOString();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString();
+  const PAID = ['confirmed', 'processing', 'shipped', 'delivered'];
 
-  // Total des commandes
-  const { count: totalOrders } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true });
+  // Toutes les requêtes en parallèle
+  const [
+    { count: totalOrders },
+    { count: todayOrders },
+    { count: monthOrders },
+    { data: statusCounts },
+    { data: revenueData },
+    { data: todayRevenueData },
+    { data: monthRevenueData },
+    { data: recentOrders },
+    { data: weeklyData },
+  ] = await Promise.all([
+    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', todayStart),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
+    supabase.from('orders').select('status'),
+    supabase.from('orders').select('total').in('status', PAID),
+    supabase.from('orders').select('total').gte('created_at', todayStart).in('status', PAID),
+    supabase.from('orders').select('total').gte('created_at', monthStart).in('status', PAID),
+    supabase.from('orders').select('id, order_number, customer_name, total, status, created_at').order('created_at', { ascending: false }).limit(5),
+    supabase.from('orders').select('created_at, total').gte('created_at', weekStart).in('status', PAID),
+  ]);
 
-  // Commandes aujourd'hui
-  const { count: todayOrders } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', todayStart);
-
-  // Commandes ce mois
-  const { count: monthOrders } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', monthStart);
-
-  // Commandes par statut
-  const { data: statusCounts } = await supabase
-    .from('orders')
-    .select('status');
-
-  const ordersByStatus = statusCounts?.reduce((acc, order) => {
-    acc[order.status] = (acc[order.status] || 0) + 1;
+  const ordersByStatus = statusCounts?.reduce((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1;
     return acc;
   }, {}) || {};
-
-  // Chiffre d'affaires total
-  const { data: revenueData } = await supabase
-    .from('orders')
-    .select('total')
-    .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
-  const totalRevenue = revenueData?.reduce((sum, order) => sum + parseFloat(order.total), 0) || 0;
-
-  // CA aujourd'hui
-  const { data: todayRevenueData } = await supabase
-    .from('orders')
-    .select('total')
-    .gte('created_at', todayStart)
-    .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
-  const todayRevenue = todayRevenueData?.reduce((sum, order) => sum + parseFloat(order.total), 0) || 0;
-
-  // CA ce mois
-  const { data: monthRevenueData } = await supabase
-    .from('orders')
-    .select('total')
-    .gte('created_at', monthStart)
-    .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
-  const monthRevenue = monthRevenueData?.reduce((sum, order) => sum + parseFloat(order.total), 0) || 0;
-
-  // Commandes récentes
-  const { data: recentOrders } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  // Ventes par jour (7 derniers jours)
-  const { data: weeklyData } = await supabase
-    .from('orders')
-    .select('created_at, total')
-    .gte('created_at', weekStart)
-    .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
 
   const salesByDay = {};
   weeklyData?.forEach(order => {
@@ -296,9 +258,9 @@ export const getOrderStats = async () => {
     todayOrders: todayOrders || 0,
     monthOrders: monthOrders || 0,
     ordersByStatus,
-    totalRevenue,
-    todayRevenue,
-    monthRevenue,
+    totalRevenue: revenueData?.reduce((s, o) => s + parseFloat(o.total), 0) || 0,
+    todayRevenue: todayRevenueData?.reduce((s, o) => s + parseFloat(o.total), 0) || 0,
+    monthRevenue: monthRevenueData?.reduce((s, o) => s + parseFloat(o.total), 0) || 0,
     recentOrders: recentOrders || [],
     salesByDay,
   };
@@ -308,30 +270,23 @@ export const getOrderStats = async () => {
  * Récupère les produits les plus vendus (Admin Dashboard)
  */
 export const getTopProducts = async (limit = 5) => {
+  // Récupère seulement les N produits les plus commandés, triés côté DB
   const { data, error } = await supabase
     .from('order_items')
-    .select(`
-      product_id,
-      product_name,
-      quantity
-    `);
+    .select('product_id, product_name, quantity')
+    .order('quantity', { ascending: false })
+    .limit(limit * 20); // marge pour l'agrégation JS
 
   if (error) throw error;
 
-  // Agréger par produit
   const productSales = {};
   data?.forEach(item => {
     if (!productSales[item.product_id]) {
-      productSales[item.product_id] = {
-        id: item.product_id,
-        name: item.product_name,
-        totalSold: 0,
-      };
+      productSales[item.product_id] = { id: item.product_id, name: item.product_name, totalSold: 0 };
     }
     productSales[item.product_id].totalSold += item.quantity;
   });
 
-  // Trier et limiter
   return Object.values(productSales)
     .sort((a, b) => b.totalSold - a.totalSold)
     .slice(0, limit);

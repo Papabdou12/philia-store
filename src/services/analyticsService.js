@@ -213,45 +213,26 @@ export const getKPIs = async () => {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
 
+  const PAID = ['confirmed', 'processing', 'shipped', 'delivered'];
+
   try {
-    // Commandes ce mois
-    const { count: monthOrders } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', monthStart);
-
-    // Commandes mois dernier
-    const { count: lastMonthOrders } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', lastMonthStart)
-      .lte('created_at', lastMonthEnd);
-
-    // CA ce mois
-    const { data: monthRevenueData } = await supabase
-      .from('orders')
-      .select('total')
-      .gte('created_at', monthStart)
-      .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
+    // Toutes les requêtes en parallèle
+    const [
+      { count: monthOrders },
+      { count: lastMonthOrders },
+      { data: monthRevenueData },
+      { data: lastMonthRevenueData },
+      { data: soldProducts },
+    ] = await Promise.all([
+      supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
+      supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd),
+      supabase.from('orders').select('total').gte('created_at', monthStart).in('status', PAID),
+      supabase.from('orders').select('total').gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd).in('status', PAID),
+      supabase.from('order_items').select('quantity, order:orders!inner(created_at)').gte('order.created_at', monthStart),
+    ]);
 
     const monthRevenue = monthRevenueData?.reduce((s, o) => s + parseFloat(o.total), 0) || 0;
-
-    // CA mois dernier
-    const { data: lastMonthRevenueData } = await supabase
-      .from('orders')
-      .select('total')
-      .gte('created_at', lastMonthStart)
-      .lte('created_at', lastMonthEnd)
-      .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
     const lastMonthRevenue = lastMonthRevenueData?.reduce((s, o) => s + parseFloat(o.total), 0) || 0;
-
-    // Produits vendus ce mois
-    const { data: soldProducts } = await supabase
-      .from('order_items')
-      .select('quantity, order:orders!inner(created_at)')
-      .gte('order.created_at', monthStart);
-
     const totalSold = soldProducts?.reduce((s, i) => s + i.quantity, 0) || 0;
 
     // Taux de conversion (simulé)
