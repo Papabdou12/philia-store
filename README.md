@@ -1,12 +1,12 @@
 # Philia'Store — Boutique en Ligne Sénégalaise
 
-![Node](https://img.shields.io/badge/Node-20.19.1-green) ![Vite](https://img.shields.io/badge/Vite-5.4.0-646CFF) ![React](https://img.shields.io/badge/React-18.3-61DAFB) ![Supabase](https://img.shields.io/badge/Supabase-2.x-3ECF8E) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38BDF8) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Node](https://img.shields.io/badge/Node-20.19.1-green) ![Vite](https://img.shields.io/badge/Vite-5.4.0-646CFF) ![React](https://img.shields.io/badge/React-18.3-61DAFB) ![Supabase](https://img.shields.io/badge/Supabase-2.x-3ECF8E) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38BDF8) ![TanStack Query](https://img.shields.io/badge/TanStack_Query-5.x-FF4154) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-> Application e-commerce React + Supabase ciblant le marché sénégalais, avec paiement mobile (Wave, Orange Money, Free Money), livraison dans toutes les régions du Sénégal, et panel d'administration complet.
+> Application e-commerce React + Supabase ciblant le marché sénégalais, avec paiement mobile (Wave, Orange Money, Free Money), livraison dans toutes les régions du Sénégal, panel d'administration complet et notifications temps réel.
 
 ## Aperçu
 
-- **Démo** : `https://philiastore.sn` *(placeholder)*
+- **Démo** : `https://philiastore.sn`
 - Interface en français, couleurs dorées sur fond noir, typographies DM Sans + Cormorant Garamond
 - 498 produits dans 6 catégories : Mode, Beauté, Technologie, Maison, Enfants, Sport
 
@@ -15,39 +15,44 @@
 | Couche | Technologies |
 |---|---|
 | Frontend | React 18, Vite 5, Tailwind CSS 3, Framer Motion, Radix UI |
-| Backend | Supabase (PostgreSQL + Auth + Storage + RLS) |
-| State | Context API + hooks personnalisés, persistance LocalStorage |
+| Backend | Supabase (PostgreSQL + Auth + Storage + Realtime + RLS) |
+| State / Cache | Context API + TanStack Query 5 (stale-while-revalidate, 30s) |
+| Edge Functions | Supabase Deno Functions (création commande sécurisée) |
 | SEO | React Helmet, JSON-LD, Open Graph, sitemap.xml, llms.txt |
-| Deploiement | Netlify (recommandé) ou Vercel |
+| Déploiement | Vercel (`vercel.json`) ou Netlify (`public/_headers`) |
+
+---
 
 ## Fonctionnalités
 
-### Boutique
-- Catalogue avec filtres par catégorie, sous-catégorie, marque et fourchette de prix
+### Boutique publique
+- Catalogue avec filtres par catégorie, prix, couleur, taille, stock, nouveautés
 - Recherche textuelle en temps réel
 - Badges produit : promo, bestseller, nouveau, vedette
 - Pagination côté serveur via Supabase
 
 ### Panier & Wishlist
 - Ajout/suppression/modification des quantités
-- Persistance LocalStorage avec préfixe `philiastore_`
+- Persistance LocalStorage (préfixe `philiastore_`)
 - Favoris synchronisés entre onglets
 
 ### Checkout
 - Commande sans compte obligatoire (guest checkout)
-- Paiements mobiles : Wave, Orange Money, Free Money
-- Paiement cash à la livraison
+- Paiements mobiles : Wave, Orange Money, Free Money, Cash à la livraison
 - Livraison Dakar Express (24h, 2 500 FCFA) ou régions (48-72h, 5 000 FCFA)
-- Zones couvertes : les 14 régions du Sénégal
-- Codes promo avec validation côté client
+- 14 régions du Sénégal couvertes
+- Codes promo validés **côté serveur** via Edge Function
+- Prix recalculés côté serveur (protection contre la manipulation client)
 
-### Admin Panel
-- Dashboard avec métriques (chiffre d'affaires, commandes, produits)
-- Gestion des produits : création, modification, suppression, upload images
-- Gestion des commandes : liste, détail, changement de statut
-- Gestion des coupons : création, activation/désactivation
-- Authentification par email/mot de passe via Supabase Auth
-- Accès protégé : rôle `admin` vérifié via JWT `user_metadata.role`
+### Panel d'administration
+- **Dashboard** : métriques temps réel (CA, commandes, produits, KPIs), graphiques Recharts
+- **Produits** : CRUD complet + upload images Supabase Storage
+- **Catégories** : gestion des catégories du catalogue
+- **Commandes** : liste, détail, changement de statut
+- **Coupons** : création, activation/désactivation, limites d'usage
+- **Témoignages** : CRUD + toggle visibilité + ordre d'affichage
+- **Paramètres** : zones de livraison, frais, paramètres boutique
+- **Notifications Realtime** : cloche en header avec badge non-lus, abonnement Supabase Realtime sur les nouvelles commandes
 
 ### PWA
 - Service Worker (`public/sw.js`) pour le cache et le mode hors-ligne
@@ -61,48 +66,55 @@
 - `public/llms.txt` généré au build pour ChatGPT, Perplexity, Claude
 - `public/robots.txt` avec directives pour crawlers IA
 
-### Securite
-- Row Level Security (RLS) activé sur toutes les tables Supabase
-- Fonction SQL `is_admin()` centralisée pour les politiques RLS
-- Validation des formulaires côté client (`src/lib/validators.js`) — anti-XSS, format téléphone sénégalais
-- Rate limiting sur le login admin : 5 tentatives max, blocage 15 min
-- Content Security Policy via `public/_headers` (Netlify)
-- Upload d'images limité aux admins authentifiés
+---
+
+## Sécurité
+
+| Mesure | Détail |
+|---|---|
+| **RLS** | Row Level Security activé sur les 14 tables Supabase |
+| **Auth admin** | Rôle vérifié via JWT `app_metadata.role = 'admin'` (non modifiable côté client) |
+| **Edge Function** | Création de commande : recalcul prix + validation coupon + rate limit 5/tel/24h |
+| **XSS** | Sanitisation via `validators.js`, JSON-LD `</script>` échappé dans `SEOHead.jsx` |
+| **Rate limiting login** | 5 tentatives max, blocage 15 min (AdminLogin.jsx) |
+| **CSP** | Content Security Policy dans `vercel.json` (prod) et `vite.config.js` (dev) |
+| **Headers** | `X-Frame-Options: DENY`, `X-Content-Type-Options`, `HSTS`, `Referrer-Policy` |
+| **CORS Edge Function** | `ALLOWED_ORIGIN` paramétrable via secret Supabase |
+| **Secrets** | Aucun secret dans le code — variables d'environnement uniquement |
+| **Storage** | Upload images limité aux admins authentifiés (RLS Storage) |
+
+> **Score sécurité : 7.5/10** — Voir les [actions manuelles requises](#actions-manuelles-supabase) avant la mise en production.
 
 ---
 
-## Installation & Demarrage
+## Installation & Démarrage
 
-### Prerequis
+### Prérequis
 - Node.js 20.19.1 (voir `.nvmrc`)
 - Compte Supabase (offre gratuite suffisante)
 
 ### 1. Cloner et installer
 
 ```bash
-git clone <repo>
+git clone git@github.com:Papabdou12/philia-store.git
 cd philia-store
-nvm use        # utilise Node 20.19.1 via .nvmrc
+nvm use        # Node 20.19.1 via .nvmrc
 npm install
 ```
 
 ### 2. Variables d'environnement
 
-```bash
-cp .env.local .env.local.bak   # sauvegarde si besoin
-```
-
-Editer `.env.local` :
+Créer `.env.local` à la racine :
 
 ```env
 VITE_SUPABASE_URL=https://VOTRE_PROJECT_ID.supabase.co
 VITE_SUPABASE_ANON_KEY=votre_cle_anon_publique
 ```
 
-> Les clés se trouvent dans **Supabase Dashboard** → **Settings** → **API**.
-> Ne jamais committer ce fichier (il est dans `.gitignore`).
+> Clés disponibles dans **Supabase Dashboard** → **Settings** → **API**.
+> Ne jamais committer ce fichier (protégé par `.gitignore`).
 
-### 3. Demarrer en developpement
+### 3. Démarrer en développement
 
 ```bash
 npm run dev    # http://localhost:3000
@@ -112,75 +124,117 @@ npm run dev    # http://localhost:3000
 
 ## Migrations Supabase
 
-### Ordre d'execution (IMPORTANT)
+### Ordre d'exécution
 
 Les migrations doivent être exécutées **dans cet ordre** dans le Supabase SQL Editor :
 
-| # | Fichier | Description |
-|---|---------|-------------|
-| 1 | `supabase/schema.sql` | Tables de base : products, categories, subcategories, brands, orders, order_items, coupons |
-| 2 | `supabase/migration_shop_v2.sql` | Nouveaux champs (poids, marque, tags, badges, min/max quantité, méta SEO) + table sous-catégories et marques |
-| 3 | `supabase/migration_security.sql` | RLS (Row Level Security) + helper `is_admin()` + bucket Storage `products` |
+| # | Script npm | Fichier | Description |
+|---|---|---|---|
+| 1 | `npm run db:schema` | `supabase/schema.sql` | Tables de base : products, categories, orders, order_items, coupons |
+| 2 | `npm run db:shop` | `supabase/migration_shop_v2.sql` | Extension schema v2 (sous-catégories, marques, tags, badges SEO) |
+| 3 | `npm run db:security` | `supabase/migration_security.sql` | RLS + `is_admin()` + bucket Storage `products` |
+| 4 | `npm run db:settings` | `supabase/migration_settings.sql` | Zones de livraison + paramètres boutique |
+| 5 | `npm run db:testimonials` | `supabase/migration_testimonials.sql` | Table témoignages + RLS |
 
-### Comment executer une migration
+Exécuter toutes les migrations d'un coup :
 
-1. Ouvrir [Supabase Dashboard](https://supabase.com/dashboard)
-2. Sélectionner ton projet → **SQL Editor**
-3. Cliquer **New query**
-4. Copier-coller le contenu du fichier SQL
-5. Cliquer **Run** (ou `Ctrl+Enter`)
-6. Vérifier que le message `Success` s'affiche
+```bash
+npm run db:all
+```
 
-### Verifier que les RLS sont actifs
+### Créer le compte admin
+
+**Option A — SQL Editor Supabase** (recommandé) :
+
+```sql
+-- 1. Créer l'utilisateur via Dashboard > Authentication > Users > Invite user
+-- 2. Lui attribuer le rôle admin dans app_metadata :
+UPDATE auth.users
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb)
+  || '{"role": "admin"}'::jsonb
+WHERE email = 'votre@email.com';
+```
+
+**Option B — Migration existante** :
+
+Exécuter `supabase/patch_admin_app_metadata.sql` dans le SQL Editor pour migrer un admin existant de `user_metadata` vers `app_metadata`.
+
+### Vérifier que les RLS sont actifs
 
 ```sql
 SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY tablename;
-```
-
-> Toutes les tables doivent avoir `rowsecurity = true`.
-
-### Creer le compte admin (premiere fois)
-
-Dans **Supabase Dashboard** → **Authentication** → **Users** → **Invite user**, puis :
-
-```sql
-UPDATE auth.users
-SET raw_user_meta_data = raw_user_meta_data || '{"role": "admin"}'::jsonb
-WHERE email = 'votre@email.com';
+-- Toutes les tables doivent avoir rowsecurity = true
 ```
 
 ---
 
-## Gestion des Images Produits
+## Edge Function — Création de commande
 
-### Upload depuis l'Admin Panel
+L'Edge Function `create-order` sécurise le checkout :
+- **Recalcul prix** côté serveur (les prix client ne sont jamais utilisés)
+- **Validation coupon** côté serveur
+- **Coût livraison** lu depuis `delivery_zones` (non fourni par le client)
+- **Rate limiting** : 5 commandes max par numéro de téléphone par 24h
 
-1. Aller dans `/admin/products/new` ou modifier un produit existant
-2. La section **Images** permet de glisser-déposer ou sélectionner des fichiers
-3. Les images sont uploadées automatiquement dans **Supabase Storage** (bucket `products`)
-4. Formats acceptés : JPEG, PNG, WebP, GIF — max **5 MB** par image
+### Déploiement
 
-### Bucket Storage public
+```bash
+# Lier le projet (une seule fois)
+npx supabase link --project-ref VOTRE_PROJECT_ID
 
-Le bucket `products` est configuré en public par `migration_security.sql`.
-Les URLs ont la forme :
+# Déployer la fonction
+npx supabase functions deploy create-order
 
+# Configurer le domaine de production pour le CORS
+npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
 ```
-https://VOTRE_PROJECT_ID.supabase.co/storage/v1/object/public/products/NOM_FICHIER.jpg
+
+> Tant que l'Edge Function n'est pas déployée, le checkout utilise un fallback avec insertion directe (moins sécurisé).
+
+---
+
+## Notifications Realtime
+
+Le panel admin affiche en temps réel les nouvelles commandes et changements de statut.
+
+### Activer Realtime sur Supabase
+
+1. **Supabase Dashboard** → **Database** → **Replication**
+2. Section `supabase_realtime` → table `orders`
+3. Cocher **INSERT** et **UPDATE**
+
+L'icône cloche dans le header affiche :
+- Un badge rouge avec le nombre de notifications non lues
+- Un point vert **Live** quand la connexion Realtime est établie
+- Un historique persisté en `localStorage` (50 dernières entrées)
+
+---
+
+## Cache (TanStack Query)
+
+Toutes les pages admin peuvent utiliser `useQuery` avec les clés centralisées :
+
+```js
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
+
+// Exemple — liste des commandes avec cache 30s
+const { data, isLoading } = useQuery({
+  queryKey: queryKeys.orders.list(filters),
+  queryFn: () => getOrders(filters),
+});
+
+// Invalider le cache après une mutation
+queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
 ```
 
-### Verifier le bucket dans Supabase
-
-1. Supabase Dashboard → **Storage**
-2. Le bucket `products` doit apparaître avec l'icône publique
-3. Si absent : exécuter à nouveau `migration_security.sql`
-
-### Fallback images
-
-Si Supabase n'est pas configuré, le site utilise les données statiques de `src/lib/productData.js` (498 produits avec images hébergées en externe). Tous les services appliquent ce même mécanisme de fallback.
+Configuration :
+- `staleTime: 30s` — zéro re-fetch si la donnée est fraîche
+- `gcTime: 5min` — navigation instantanée entre les pages admin
+- `retry: 1` — une seule relance réseau (adapté 3G/4G)
 
 ---
 
@@ -189,38 +243,52 @@ Si Supabase n'est pas configuré, le site utilise les données statiques de `src
 ```
 philia'store/
 ├── public/
-│   ├── manifest.json       # PWA manifest
-│   ├── sw.js               # Service Worker
-│   ├── offline.html        # Page hors-ligne
-│   ├── robots.txt          # SEO + crawlers IA
-│   ├── sitemap.xml         # Plan du site
-│   ├── llms.txt            # GEO (ChatGPT/Perplexity/Claude)
-│   ├── _headers            # Headers securite Netlify (CSP, HSTS...)
-│   └── _redirects          # Routing SPA Netlify
+│   ├── manifest.json        # PWA manifest
+│   ├── sw.js                # Service Worker
+│   ├── offline.html         # Page hors-ligne
+│   ├── robots.txt           # SEO + crawlers IA
+│   ├── sitemap.xml          # Plan du site
+│   ├── llms.txt             # GEO (ChatGPT/Perplexity/Claude)
+│   ├── _headers             # Headers sécurité Netlify
+│   └── _redirects           # Routing SPA Netlify
 ├── src/
-│   ├── components/         # Composants reusables
-│   │   ├── admin/          # Composants panel admin (ProtectedRoute, etc.)
-│   │   └── ui/             # Primitives Radix UI (Button, Toast...)
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── Header.jsx              # Header avec notifications
+│   │   │   ├── Sidebar.jsx             # Navigation latérale
+│   │   │   ├── NotificationDropdown.jsx # Cloche Realtime
+│   │   │   ├── ProtectedRoute.jsx      # Garde admin
+│   │   │   ├── StatsCard.jsx
+│   │   │   ├── StatusBadge.jsx
+│   │   │   ├── DataTable.jsx
+│   │   │   └── ImageUploader.jsx
+│   │   └── ui/                         # Primitives Radix UI
 │   ├── contexts/
-│   │   ├── AppContext.jsx       # Etat global : panier, wishlist, user, coupons
-│   │   └── AdminAuthContext.jsx # Authentification admin
+│   │   ├── AppContext.jsx              # Panier, wishlist, coupons
+│   │   ├── AdminAuthContext.jsx        # Auth admin (app_metadata)
+│   │   ├── NotificationContext.jsx     # Supabase Realtime + cache TQ
+│   │   └── ThemeContext.jsx            # Dark/light mode
 │   ├── hooks/
-│   │   ├── useCart.js      # Acces etat panier
-│   │   └── useWishlist.js  # Acces etat favoris
+│   │   ├── useCart.js
+│   │   └── useWishlist.js
 │   ├── lib/
-│   │   ├── supabase.js     # Client + helpers Supabase
-│   │   ├── constants.js    # Couleurs, contacts, livraison, categories
-│   │   ├── meta.js         # Metadonnees SEO par page
-│   │   ├── productData.js  # Donnees statiques fallback (498 produits)
-│   │   └── validators.js   # Validation formulaires (anti-XSS)
+│   │   ├── supabase.js                 # Client Supabase
+│   │   ├── queryClient.js              # TanStack Query config + queryKeys
+│   │   ├── constants.js                # Couleurs, contacts, livraison
+│   │   ├── meta.js                     # Métadonnées SEO par page
+│   │   ├── productData.js              # Fallback statique (498 produits)
+│   │   └── validators.js               # Anti-XSS, validation formulaires
 │   ├── pages/
-│   │   ├── admin/          # Dashboard, Produits, Commandes, Coupons
+│   │   ├── admin/
 │   │   │   ├── Dashboard.jsx
 │   │   │   ├── AdminLayout.jsx
 │   │   │   ├── AdminLogin.jsx
-│   │   │   ├── products/   # ProductList, ProductForm
-│   │   │   ├── orders/     # OrderList, OrderDetail
-│   │   │   └── coupons/    # CouponList, CouponForm
+│   │   │   ├── Settings.jsx
+│   │   │   ├── products/               # ProductList, ProductForm
+│   │   │   ├── orders/                 # OrderList, OrderDetail
+│   │   │   ├── coupons/                # CouponList, CouponForm
+│   │   │   ├── categories/             # CategoryList
+│   │   │   └── testimonials/           # TestimonialList
 │   │   ├── HomePage.jsx
 │   │   ├── ShopPage.jsx
 │   │   ├── ProductDetailPage.jsx
@@ -229,22 +297,34 @@ philia'store/
 │   │   ├── WishlistPage.jsx
 │   │   ├── PromoPage.jsx
 │   │   ├── AboutPage.jsx
-│   │   └── ContactPage.jsx
+│   │   ├── ContactPage.jsx
+│   │   ├── CGVPage.jsx
+│   │   ├── DeliveryPage.jsx
+│   │   └── ReturnsPage.jsx
 │   ├── services/
-│   │   ├── productService.js    # CRUD produits + upload images
-│   │   ├── orderService.js      # Gestion commandes
-│   │   ├── couponService.js     # Validation et gestion coupons
-│   │   ├── authService.js       # Authentification admin
-│   │   └── analyticsService.js  # Metriques dashboard
-│   └── App.jsx             # Routeur principal
+│   │   ├── productService.js           # CRUD produits + upload images
+│   │   ├── orderService.js             # Commandes (Edge Function + fallback)
+│   │   ├── couponService.js            # Validation et gestion coupons
+│   │   ├── authService.js              # Auth admin (app_metadata)
+│   │   ├── settingsService.js          # Zones livraison + paramètres
+│   │   ├── testimonialsService.js      # Témoignages (public + admin)
+│   │   └── analyticsService.js         # Métriques dashboard
+│   └── App.jsx                         # Routeur + providers
 ├── supabase/
-│   ├── schema.sql               # Schema de base
-│   ├── migration_shop_v2.sql    # Extension schema v2
-│   └── migration_security.sql  # RLS + Storage
-├── plugins/                # Plugins Vite (editeur Hostinger Horizons)
+│   ├── schema.sql
+│   ├── migration_shop_v2.sql
+│   ├── migration_security.sql
+│   ├── migration_settings.sql
+│   ├── migration_testimonials.sql
+│   ├── patch_admin_app_metadata.sql    # Migration user_metadata → app_metadata
+│   └── functions/
+│       └── create-order/
+│           └── index.ts                # Edge Function checkout sécurisé
+├── plugins/                            # Plugins Vite (éditeur Hostinger Horizons)
 ├── tools/
-│   └── generate-llms.js    # Generateur llms.txt au build
-├── .nvmrc                  # Node 20.19.1
+│   └── generate-llms.js               # Générateur llms.txt au build
+├── vercel.json                         # Headers sécurité Vercel (CSP, HSTS...)
+├── .nvmrc                              # Node 20.19.1
 └── vite.config.js
 ```
 
@@ -252,8 +332,8 @@ philia'store/
 
 ## Routes
 
-| Route | Page | Acces |
-|-------|------|-------|
+| Route | Page | Accès |
+|---|---|---|
 | `/` | Accueil | Public |
 | `/boutique` | Boutique | Public |
 | `/produit/:id` | Fiche produit | Public |
@@ -261,72 +341,93 @@ philia'store/
 | `/checkout` | Checkout | Public |
 | `/wishlist` | Favoris | Public |
 | `/promos` | Promotions | Public |
-| `/a-propos` | A propos | Public |
+| `/a-propos` | À propos | Public |
 | `/contact` | Contact | Public |
+| `/cgv` | CGV | Public |
+| `/livraison` | Livraison | Public |
+| `/retours` | Retours | Public |
 | `/admin/login` | Connexion admin | Public |
-| `/admin` | Dashboard admin | Admin |
+| `/admin` | Dashboard | Admin |
 | `/admin/products` | Liste produits | Admin |
 | `/admin/products/new` | Nouveau produit | Admin |
 | `/admin/products/:id` | Modifier produit | Admin |
+| `/admin/categories` | Catégories | Admin |
 | `/admin/orders` | Liste commandes | Admin |
-| `/admin/orders/:id` | Detail commande | Admin |
+| `/admin/orders/:id` | Détail commande | Admin |
 | `/admin/coupons` | Liste coupons | Admin |
 | `/admin/coupons/new` | Nouveau coupon | Admin |
 | `/admin/coupons/:id` | Modifier coupon | Admin |
+| `/admin/testimonials` | Témoignages | Admin |
+| `/admin/settings` | Paramètres & Livraison | Admin |
 
 ---
 
-## Deploiement
+## Déploiement
 
-### Netlify (recommande)
-
-```bash
-npm run build
-# Deployer le dossier dist/
-```
-
-Variables d'environnement à configurer dans **Netlify** → Site settings → Environment variables :
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-Le fichier `public/_headers` configure automatiquement les headers sécurité (CSP, HSTS, X-Frame-Options...).
-Le fichier `public/_redirects` gère le routing SPA (`/* → /index.html 200`).
-
-### Vercel
+### Vercel (recommandé)
 
 ```bash
 npm run build
-# Output directory : dist
+# Déployer le dossier dist/
 ```
 
-Configurer les mêmes variables d'environnement dans le dashboard Vercel.
+Le fichier `vercel.json` configure automatiquement les headers sécurité et le routing SPA.
+
+Variables d'environnement à configurer dans **Vercel** → Settings → Environment Variables :
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+### Netlify
+
+```bash
+npm run build
+# Output directory : dist/
+```
+
+Le fichier `public/_headers` configure les headers sécurité et `public/_redirects` gère le routing SPA.
 
 ---
 
 ## Commandes
 
 ```bash
-npm run dev        # Dev server (http://localhost:3000)
-npm run build      # Build production (genere llms.txt puis vite build)
-npm run preview    # Preview du build (http://localhost:3000)
-npm run lint       # ESLint en mode silencieux (erreurs uniquement)
-npm run lint:warn  # ESLint avec avertissements
+npm run dev              # Dev server (http://localhost:3000)
+npm run build            # Build production (génère llms.txt puis vite build)
+npm run preview          # Preview du build (http://localhost:3000)
+npm run lint             # ESLint silencieux (erreurs uniquement)
+npm run lint:warn        # ESLint avec avertissements
+
+# Migrations Supabase
+npm run db:schema        # Schema de base
+npm run db:shop          # Migration shop v2
+npm run db:security      # RLS + Storage
+npm run db:settings      # Zones livraison + paramètres
+npm run db:testimonials  # Témoignages
+npm run db:all           # Toutes les migrations dans l'ordre
+
+# Edge Function
+npx supabase functions deploy create-order
+npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
 ```
 
 ---
 
-## Securite
+## Actions manuelles Supabase
 
-| Mesure | Details |
-|---|---|
-| RLS | Row Level Security active sur toutes les tables Supabase |
-| Auth admin | Role verifie via JWT `user_metadata.role = 'admin'` |
-| Validation | Tous les formulaires valides cote client — anti-XSS, format tel. senegalais |
-| Rate limiting | 5 tentatives max sur le login admin, blocage 15 min |
-| CSP | Content Security Policy configure via `public/_headers` |
-| Storage | Upload images limite aux admins authentifies |
-| Secrets | Aucun secret dans le code — variables d'environnement uniquement |
+Ces actions ne peuvent pas être automatisées et doivent être faites manuellement dans le Dashboard Supabase avant la mise en production :
+
+- [ ] **Changer le mot de passe admin** → Authentication → Users → Reset password
+- [ ] **Migrer `app_metadata`** → Exécuter `supabase/patch_admin_app_metadata.sql` dans SQL Editor
+- [ ] **Activer Realtime** → Database → Replication → `orders` → cocher INSERT et UPDATE
+- [ ] **Déployer Edge Function** → `npx supabase functions deploy create-order`
+- [ ] **Supprimer INSERT public orders** (après déploiement Edge Function) :
+  ```sql
+  DROP POLICY IF EXISTS "orders_insert_anon" ON orders;
+  ```
+- [ ] **Activer CAPTCHA** → Authentication → Settings → Enable CAPTCHA (hCaptcha)
 
 ---
 
@@ -334,7 +435,7 @@ npm run lint:warn  # ESLint avec avertissements
 
 - **Email** : contact@philiastore.sn
 - **WhatsApp** : +221 78 396 89 70
-- **Adresse** : Dakar, Senegal
+- **Adresse** : Dakar, Sénégal
 - **Facebook** : https://facebook.com/philiastore
 - **Instagram** : https://instagram.com/philiastore
 
