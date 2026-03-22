@@ -6,7 +6,7 @@
 
 ## Aperçu
 
-- **Démo** : `https://philiastore.sn`
+- **Démo** : `https://votre-domaine.sn`
 - Interface en français, couleurs dorées sur fond noir, typographies DM Sans + Cormorant Garamond
 - 498 produits dans 6 catégories : Mode, Beauté, Technologie, Maison, Enfants, Sport
 
@@ -96,7 +96,7 @@
 ### 1. Cloner et installer
 
 ```bash
-git clone git@github.com:Papabdou12/philia-store.git
+git clone git@github.com:VOTRE_USERNAME/philia-store.git
 cd philia-store
 nvm use        # Node 20.19.1 via .nvmrc
 npm install
@@ -189,7 +189,7 @@ npx supabase link --project-ref VOTRE_PROJECT_ID
 npx supabase functions deploy create-order
 
 # Configurer le domaine de production pour le CORS
-npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
+npx supabase secrets set ALLOWED_ORIGIN=https://votre-domaine.sn
 ```
 
 > Tant que l'Edge Function n'est pas déployée, le checkout utilise un fallback avec insertion directe (moins sécurisé).
@@ -410,7 +410,7 @@ npm run db:all           # Toutes les migrations dans l'ordre
 
 # Edge Function
 npx supabase functions deploy create-order
-npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
+npx supabase secrets set ALLOWED_ORIGIN=https://votre-domaine.sn
 ```
 
 ---
@@ -433,11 +433,9 @@ Ces actions ne peuvent pas être automatisées et doivent être faites manuellem
 
 ## Contact
 
-- **Email** : contact@philiastore.sn
-- **WhatsApp** : +221 78 396 89 70
+- **Email** : contact@votre-domaine.sn
+- **WhatsApp** : +221 XX XXX XX XX
 - **Adresse** : Dakar, Sénégal
-- **Facebook** : https://facebook.com/philiastore
-- **Instagram** : https://instagram.com/philiastore
 
 ---
 
