@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hors ligne — Philia'Store</title>
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        background-color: #000000;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
+      }
+
+      .logo {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+      }
+
+      .icon-offline {
+        width: 64px;
+        height: 64px;
+        color: #8B7355;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #D4AF37;
+        line-height: 1.2;
+      }
+
+      p {
+        font-size: 1rem;
+        color: #cccccc;
+        line-height: 1.6;
+      }
+
+      .retry-btn {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 14px 32px;
+        background-color: #D4AF37;
+        color: #000000;
+        font-size: 1rem;
+        font-weight: 700;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        min-height: 48px;
+        min-width: 160px;
+        transition: opacity 0.2s ease;
+        letter-spacing: 0.02em;
+      }
+
+      .retry-btn:hover,
+      .retry-btn:focus {
+        opacity: 0.85;
+        outline: 2px solid #D4AF37;
+        outline-offset: 2px;
+      }
+
+      .retry-btn:active {
+        opacity: 0.7;
+      }
+
+      .divider {
+        width: 48px;
+        height: 2px;
+        background-color: #8B7355;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img src="/logo.png" alt="Philia'Store" class="logo" />
+
+      <div class="divider"></div>
+
+      <div>
+        <h1>Vous êtes hors ligne</h1>
+      </div>
+
+      <p>Vérifiez votre connexion internet<br />et réessayez dans quelques instants.</p>
+
+      <button class="retry-btn" onclick="window.location.reload()">
+        Réessayer
+      </button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Philia'Store",
+  "short_name": "Philia",
+  "description": "Boutique en ligne au Sénégal - Mode, Beauté, Tech, Maison",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#D4AF37",
+  "lang": "fr",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    { "name": "Boutique", "url": "/boutique", "description": "Voir tous les produits" },
+    { "name": "Panier", "url": "/panier", "description": "Voir mon panier" }
+  ]
+}
