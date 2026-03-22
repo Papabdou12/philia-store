@@ -10,25 +10,35 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// En production : définir ALLOWED_ORIGIN dans Supabase Edge Function secrets
-//   npx supabase secrets set ALLOWED_ORIGIN=https://philiastore.sn
-// En dev : '*' est utilisé par défaut
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
+// ALLOWED_ORIGINS : liste séparée par des virgules
+//   npx supabase secrets set ALLOWED_ORIGINS=https://philia-store.vercel.app,https://philia-store-git-develop.vercel.app
+// En dev : '*' autorise tout
+const rawOrigins = Deno.env.get('ALLOWED_ORIGINS') ?? '*';
+const allowedOrigins = rawOrigins === '*' ? null : rawOrigins.split(',').map(o => o.trim());
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Vary': 'Origin',
-};
-
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-  });
+function getCorsHeaders(requestOrigin: string | null) {
+  let allowedOrigin = '*';
+  if (allowedOrigins && requestOrigin) {
+    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  }
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+}
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const CORS_HEADERS = getCorsHeaders(origin);
+
+  const json = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+
   // Répondre aux requêtes OPTIONS (preflight CORS)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
