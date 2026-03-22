@@ -1,4 +1,5 @@
 
+// Demo commit — feature branch workflow test
 export const BRAND_COLORS = {
   bronze: '#8B7355',
   gold: '#D4AF37',
